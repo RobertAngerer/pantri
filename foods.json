@@ -1,0 +1,154 @@
+{
+  "noodles": {
+    "kcal": 346,
+    "protein_g": 12.0,
+    "carbs_g": 70.0,
+    "fat_g": 2.0,
+    "cost_eur_per_100g": 0.2,
+    "cent_per_g_protein": 1.67
+  },
+  "gulaschmeat": {
+    "kcal": 125,
+    "protein_g": 20.0,
+    "carbs_g": 0.0,
+    "fat_g": 5.0,
+    "cost_eur_per_100g": 2.0,
+    "cent_per_g_protein": 10.0
+  },
+  "butter": {
+    "kcal": 733,
+    "protein_g": 0.9,
+    "carbs_g": 0.1,
+    "fat_g": 81.0,
+    "cost_eur_per_100g": 1.28,
+    "cent_per_g_protein": 142.22
+  },
+  "milk": {
+    "kcal": 64,
+    "protein_g": 3.3,
+    "carbs_g": 4.7,
+    "fat_g": 3.5,
+    "cost_eur_per_100g": 0.13,
+    "cent_per_g_protein": 3.94
+  },
+  "apfel-zimt-cereal": {
+    "kcal": 342,
+    "protein_g": 11.0,
+    "carbs_g": 62.0,
+    "fat_g": 5.6,
+    "cost_eur_per_100g": 0.64,
+    "cent_per_g_protein": 5.82
+  },
+  "chicken-breast": {
+    "kcal": 156,
+    "protein_g": 31.0,
+    "carbs_g": 0.0,
+    "fat_g": 3.6,
+    "cost_eur_per_100g": 1.0,
+    "cent_per_g_protein": 3.23
+  },
+  "rice": {
+    "kcal": 126,
+    "protein_g": 2.7,
+    "carbs_g": 28.0,
+    "fat_g": 0.3,
+    "cost_eur_per_100g": 0.2,
+    "cent_per_g_protein": 7.41
+  },
+  "olive-oil": {
+    "kcal": 900,
+    "protein_g": 0.0,
+    "carbs_g": 0.0,
+    "fat_g": 100.0,
+    "cost_eur_per_100g": 0.8,
+    "cent_per_g_protein": null
+  },
+  "skyr": {
+    "kcal": 50,
+    "protein_g": 9.0,
+    "carbs_g": 3.4,
+    "fat_g": 0.1,
+    "cost_eur_per_100g": 0.4,
+    "cent_per_g_protein": 4.44
+  },
+  "banana": {
+    "kcal": 99,
+    "protein_g": 1.1,
+    "carbs_g": 23.0,
+    "fat_g": 0.3,
+    "cost_eur_per_100g": 0.15,
+    "cent_per_g_protein": 13.64
+  },
+  "potatoes": {
+    "kcal": 77,
+    "protein_g": 2.0,
+    "carbs_g": 17.0,
+    "fat_g": 0.1,
+    "cost_eur_per_100g": 0.1,
+    "cent_per_g_protein": 5.0
+  },
+  "salmon": {
+    "kcal": 197,
+    "protein_g": 20.0,
+    "carbs_g": 0.0,
+    "fat_g": 13.0,
+    "cost_eur_per_100g": 2.0,
+    "cent_per_g_protein": 10.0
+  },
+  "peanut-butter": {
+    "kcal": 630,
+    "protein_g": 25.0,
+    "carbs_g": 20.0,
+    "fat_g": 50.0,
+    "cost_eur_per_100g": 1.0,
+    "cent_per_g_protein": 4.0
+  },
+  "cheese": {
+    "kcal": 351,
+    "protein_g": 25.0,
+    "carbs_g": 2.0,
+    "fat_g": 27.0,
+    "cost_eur_per_100g": 1.0,
+    "cent_per_g_protein": 4.0
+  },
+  "flour": {
+    "kcal": 353,
+    "protein_g": 10.0,
+    "carbs_g": 76.0,
+    "fat_g": 1.0,
+    "cost_eur_per_100g": 0.1,
+    "cent_per_g_protein": 1.0
+  },
+  "magertopfen": {
+    "kcal": 74,
+    "protein_g": 14.0,
+    "carbs_g": 4.1,
+    "fat_g": 0.2,
+    "cost_eur_per_100g": 0.1,
+    "cent_per_g_protein": 0.71
+  },
+  "mango": {
+    "kcal": 67,
+    "protein_g": 0.8,
+    "carbs_g": 15.0,
+    "fat_g": 0.4,
+    "cost_eur_per_100g": 0.9,
+    "cent_per_g_protein": 112.5
+  },
+  "blueberries": {
+    "kcal": 64,
+    "protein_g": 0.7,
+    "carbs_g": 14.5,
+    "fat_g": 0.3,
+    "cost_eur_per_100g": 0.8,
+    "cent_per_g_protein": 114.29
+  },
+  "whey-protein": {
+    "kcal": 399,
+    "protein_g": 78.0,
+    "carbs_g": 6.0,
+    "fat_g": 7.0,
+    "cost_eur_per_100g": 2.8,
+    "cent_per_g_protein": 3.59
+  }
+}
