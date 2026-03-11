@@ -150,5 +150,29 @@
     "fat_g": 7.0,
     "cost_eur_per_100g": 2.8,
     "cent_per_g_protein": 3.59
+  },
+  "eggs": {
+    "kcal": 155,
+    "protein_g": 13.0,
+    "carbs_g": 1.1,
+    "fat_g": 11.0,
+    "cost_eur_per_100g": 0.71,
+    "cent_per_g_protein": 5.46
+  },
+  "ham": {
+    "kcal": 144,
+    "protein_g": 21.0,
+    "carbs_g": 1.5,
+    "fat_g": 6.0,
+    "cost_eur_per_100g": 2.0,
+    "cent_per_g_protein": 9.52
+  },
+  "high-protein-milchreis": {
+    "kcal": 92,
+    "protein_g": 7.6,
+    "carbs_g": 12.0,
+    "fat_g": 1.5,
+    "cost_eur_per_100g": 0.4,
+    "cent_per_g_protein": 5.26
   }
 }

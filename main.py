@@ -65,20 +65,38 @@ Respond with this exact JSON structure:
 """
 
 
-def today_file() -> Path:
+def day_file(day: str) -> Path:
     DAYS_DIR.mkdir(exist_ok=True)
-    return DAYS_DIR / f"{date.today().isoformat()}.txt"
+    return DAYS_DIR / f"{day}.txt"
 
 
-def read_input(path: Path) -> str:
+def read_input(path: Path) -> tuple[str, str]:
+    """Read file and return (content, target_date).
+
+    If the first line is a date (YYYY-MM-DD), use it as the target date
+    and strip it from the content. Otherwise default to today.
+    """
     if not path.exists():
         print(f"File not found: {path}")
         sys.exit(1)
-    content = path.read_text().strip()
-    if not content:
+    raw = path.read_text().strip()
+    if not raw:
         print(f"File is empty, add your food: {path}")
         sys.exit(1)
-    return content
+
+    lines = raw.split("\n", 1)
+    first = lines[0].strip()
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", first):
+        target = first
+        content = lines[1].strip() if len(lines) > 1 else ""
+        if not content:
+            print(f"File has a date but no food entries: {path}")
+            sys.exit(1)
+    else:
+        target = date.today().isoformat()
+        content = raw
+
+    return content, target
 
 
 def load_foods() -> dict:
@@ -189,9 +207,9 @@ def display(data: dict):
     print()
 
 
-def format_day_file(data: dict) -> str:
+def format_day_file(data: dict, target: str) -> str:
     """Format LLM output as a clean readable text file."""
-    lines = []
+    lines = [target]
     for entry in data["entries"]:
         ts = entry.get("timestamp", "")
         lines.append(f"[{entry['label']}]  @ {ts}" if ts else f"[{entry['label']}]")
@@ -225,8 +243,7 @@ def recalc_day_totals(entries: list) -> dict:
     return {k: round(v, 1) if k != "cost_eur" else round(v, 2) for k, v in dt.items()}
 
 
-def save(data: dict, day_file: Path):
-    today = date.today().isoformat()
+def save(data: dict, day_path: Path, target: str):
     now = datetime.now().strftime("%H:%M")
 
     # stamp each incoming entry
@@ -238,8 +255,8 @@ def save(data: dict, day_file: Path):
     else:
         db = {"days": {}}
 
-    if today in db["days"]:
-        existing = db["days"][today]
+    if target in db["days"]:
+        existing = db["days"][target]
         # merge: update entries by label, add new ones
         existing_by_label = {e["label"]: i for i, e in enumerate(existing["entries"])}
         for entry in data["entries"]:
@@ -251,22 +268,32 @@ def save(data: dict, day_file: Path):
         existing["day_totals"] = recalc_day_totals(existing["entries"])
     else:
         data["day_totals"] = recalc_day_totals(data["entries"])
-        db["days"][today] = data
+        db["days"][target] = data
 
     DB_FILE.write_text(json.dumps(db, indent=2, ensure_ascii=False))
 
     # rewrite the day file with clean formatted output
-    day_file.write_text(format_day_file(db["days"][today]))
+    day_path.write_text(format_day_file(db["days"][target], target))
 
     n = len(data["entries"])
-    print(f"Saved {n} {'entry' if n == 1 else 'entries'} for {today}.")
+    print(f"Saved {n} {'entry' if n == 1 else 'entries'} for {target}.")
 
     sync()
 
 
-def status():
-    """Print today's consumed totals and what's remaining."""
-    today = date.today().isoformat()
+GREEN = "\033[32m"
+RED = "\033[31m"
+CYAN = "\033[36m"
+YELLOW = "\033[33m"
+BLUE = "\033[34m"
+BOLD = "\033[1m"
+DIM = "\033[2m"
+RESET = "\033[0m"
+
+
+def status(day: str | None = None):
+    """Print consumed totals and what's remaining."""
+    today = day or date.today().isoformat()
 
     if not DB_FILE.exists():
         print("No data yet.")
@@ -275,43 +302,75 @@ def status():
     db = json.loads(DB_FILE.read_text())
     if today not in db["days"]:
         print(f"No entries for {today}.")
-        print(f"  Remaining:  {GOAL_KCAL} kcal  {GOAL_PROTEIN:.0f}g protein")
+        print(f"  Remaining:  {GREEN}{GOAL_KCAL} kcal  {GOAL_PROTEIN:.0f}g protein{RESET}")
         sys.exit(0)
 
     dt = db["days"][today]["day_totals"]
     kcal_left = GOAL_KCAL - dt["kcal"]
     protein_left = GOAL_PROTEIN - dt["protein_g"]
+    kcal_color = RED if kcal_left < 0 else GREEN
+    protein_color = RED if protein_left < 0 else GREEN
 
-    print(f"  Eaten:      {dt['kcal']:>5} kcal   {dt['protein_g']:>5.1f}g protein   {dt['carbs_g']:>5.1f}g carbs   {dt['fat_g']:>5.1f}g fat   EUR {dt['cost_eur']:.2f}")
-    print(f"  Remaining:  {kcal_left:>5} kcal   {protein_left:>5.1f}g protein")
+    print(f"  {DIM}{today}{RESET}")
+    print(f"  {BOLD}Eaten:{RESET}      {dt['kcal']:>7.0f} kcal   {BLUE}{dt['protein_g']:>5.1f}g protein{RESET}   {YELLOW}{dt['carbs_g']:>5.1f}g carbs{RESET}   {RED}{dt['fat_g']:>5.1f}g fat{RESET}   {CYAN}EUR {dt['cost_eur']:.2f}{RESET}")
+    print(f"  {BOLD}Remaining:{RESET}  {kcal_color}{kcal_left:>7.0f} kcal{RESET}   {protein_color}{protein_left:>5.1f}g protein{RESET}")
+
+
+USAGE = """\
+pantri — food tracker
+
+usage:
+  python main.py                 open/create today's file, process it
+  python main.py <file>          process a specific file
+  python main.py status           show today's totals and remaining goals
+  python main.py status 2026-03-10  show totals for a specific day
+
+file format:
+  optionally put a date (YYYY-MM-DD) as the first line to
+  save entries to that day. otherwise defaults to today.
+
+  example file:
+    2026-03-10
+    [breakfast]
+    cereal 100g
+    milk 200ml
+    [lunch]
+    chicken 200g
+    rice 150g
+"""
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] in ("help", "--help", "-h"):
+        print(USAGE)
+        return
+
     if len(sys.argv) > 1 and sys.argv[1] == "status":
-        status()
+        status(sys.argv[2] if len(sys.argv) > 2 else None)
         return
 
     if len(sys.argv) > 1:
         path = Path(sys.argv[1])
     else:
-        path = today_file()
+        day = date.today().isoformat()
+        path = day_file(day)
         if not path.exists():
             path.write_text("")
             print(f"Created {path} — add your food and run again.")
             sys.exit(0)
 
-    content = read_input(path)
+    content, day = read_input(path)
     content = strip_formatting(content)
 
     prompt = build_prompt(content)
-    print("Sending to OpenAI...")
+    print(f"Sending to OpenAI (for {day})...")
     data = call_llm(prompt)
 
     display(data)
 
     answer = input("Save these entries? [y/N] ").strip().lower()
     if answer in ("y", "yes"):
-        save(data, path)
+        save(data, path, day)
     else:
         print("Discarded.")
 
