@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Fork: three tines + bridge + handle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="
+            M30,24 L30,46 Q30,48 32,48 L32,24 Q32,22 31,22 Q30,22 30,24 Z
+            M36,24 L36,46 Q36,48 38,48 L38,24 Q38,22 37,22 Q36,22 36,24 Z
+            M44,24 L44,46 Q44,48 46,48 L46,24 Q46,22 45,22 Q44,22 44,24 Z
+            M28,46 L48,46 L48,52 Q48,56 44,56 L42,56 L42,84 Q42,88 40,88 L36,88 Q34,88 34,84 L34,56 L32,56 Q28,56 28,52 Z" />
+    <!-- Euro coin circle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M68,58 m-22,0 a22,22 0 1,1 44,0 a22,22 0 1,1 -44,0" />
+    <!-- Euro sign (dark green on white coin) -->
+    <path
+        android:fillColor="#1B5E20"
+        android:strokeWidth="0"
+        android:pathData="
+            M75,44 C72,40 68,38 64,38
+            C58,38 53,44 53,58
+            C53,72 58,78 64,78
+            C68,78 72,76 75,72
+            L72,69 C70,72 68,74 64,74
+            C60,74 57,68 57,58
+            C57,48 60,42 64,42
+            C68,42 70,44 72,47 Z
+            M51,54 L72,54 L72,56 L51,56 Z
+            M51,60 L72,60 L72,62 L51,62 Z" />
+</vector>
