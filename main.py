@@ -1,17 +1,18 @@
 import json
 import os
 import re
-import subprocess
 import sys
 from datetime import date, datetime
 from pathlib import Path
 
+import httpx
 from openai import OpenAI
 
 DB_FILE = Path("pantri_data.json")
 FOODS_FILE = Path("foods.json")
 DAYS_DIR = Path("days")
-REMOTE = os.environ.get("PANTRI_REMOTE")  # e.g. "ubuntu@1.2.3.4:/home/ubuntu/pantri/"
+SUPABASE_URL = os.environ.get("PANTRI_SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("PANTRI_SECRET_SUPABASE_KEY") or os.environ.get("PANTRI_SUPABASE_KEY")
 
 GOAL_KCAL = 3500
 GOAL_PROTEIN = 200.0
@@ -26,14 +27,18 @@ Rules:
 - Use realistic average values for common foods.
 - For branded or regional items, make your best estimate based on the food category.
 - Costs are in EUR, representing typical German supermarket prices.
-- If known nutritional data is provided for specific foods, use those exact values (scale by quantity). For all other foods, estimate as usual.
+- A list of known foods with exact nutritional data will be provided. When a food matches or closely matches a known food (e.g. "chicken" -> "chicken-breast", "pb" -> "peanut-butter", "cereal" -> "apfel-zimt-cereal", "topfen" -> "magertopfen"), use the known food's exact values scaled by quantity. Use the known food's name in the output.
+- For foods that don't match any known food, estimate as usual.
 - If the user groups items (e.g. with headers, blank lines, or labels like "lunch:", "[dinner]"), preserve those groups. Otherwise put everything in a single entry called "entry 1".
+
+- Include a "timestamp" field in each entry. Use the current time provided in the input.
 
 Respond with this exact JSON structure:
 {
   "entries": [
     {
       "label": "entry name",
+      "timestamp": "HH:MM",
       "items": [
         {
           "name": "food name",
@@ -105,11 +110,6 @@ def load_foods() -> dict:
     return {}
 
 
-def find_known_foods(content: str, foods: dict) -> dict:
-    lower = content.lower()
-    return {name: info for name, info in foods.items() if name.lower() in lower}
-
-
 def strip_formatting(content: str) -> str:
     """Strip formatted output back to simple 'food quantity' lines."""
     lines = []
@@ -132,11 +132,10 @@ def strip_formatting(content: str) -> str:
 
 def build_prompt(content: str) -> str:
     foods = load_foods()
-    known = find_known_foods(content, foods)
-    if not known:
-        return content
-    lines = ["Known nutritional data (per 100g):"]
-    for name, info in known.items():
+    now = datetime.now().strftime("%H:%M")
+    lines = [f"Current time: {now}", "",
+             "Known foods (per 100g) — use these exact values when a food matches:"]
+    for name, info in foods.items():
         lines.append(
             f"- {name}: {info['kcal']} kcal, "
             f"{info['protein_g']}P, {info['carbs_g']}C, {info['fat_g']}F, "
@@ -222,15 +221,29 @@ def format_day_file(data: dict, target: str) -> str:
     return "\n".join(lines)
 
 
-def sync():
-    if not REMOTE:
+def _supa_headers():
+    return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates",
+    }
+
+
+def sync(target: str, day_data: dict):
+    if not SUPABASE_URL or not SUPABASE_KEY:
         return
     try:
-        subprocess.run(
-            ["rsync", "-az", str(DB_FILE), REMOTE],
-            check=True, timeout=10,
+        r = httpx.post(
+            f"{SUPABASE_URL}/rest/v1/days",
+            headers=_supa_headers(),
+            json={"date": target, "entries": day_data["entries"], "day_totals": day_data["day_totals"], "raw_text": day_data.get("raw_text", "")},
+            timeout=10,
         )
-        print(f"Synced to {REMOTE}")
+        if r.status_code >= 400:
+            print(f"Sync failed: {r.status_code} {r.text}")
+        else:
+            print("Synced to Supabase")
     except Exception as e:
         print(f"Sync failed: {e}")
 
@@ -246,9 +259,10 @@ def recalc_day_totals(entries: list) -> dict:
 def save(data: dict, day_path: Path, target: str):
     now = datetime.now().strftime("%H:%M")
 
-    # stamp each incoming entry
+    # only stamp entries that don't already have a timestamp
     for entry in data["entries"]:
-        entry["timestamp"] = now
+        if not entry.get("timestamp"):
+            entry["timestamp"] = now
 
     if DB_FILE.exists():
         db = json.loads(DB_FILE.read_text())
@@ -262,6 +276,10 @@ def save(data: dict, day_path: Path, target: str):
         for entry in data["entries"]:
             idx = existing_by_label.get(entry["label"])
             if idx is not None:
+                # preserve the original timestamp from the existing entry
+                old_ts = existing["entries"][idx].get("timestamp")
+                if old_ts:
+                    entry["timestamp"] = old_ts
                 existing["entries"][idx] = entry
             else:
                 existing["entries"].append(entry)
@@ -273,12 +291,14 @@ def save(data: dict, day_path: Path, target: str):
     DB_FILE.write_text(json.dumps(db, indent=2, ensure_ascii=False))
 
     # rewrite the day file with clean formatted output
-    day_path.write_text(format_day_file(db["days"][target], target))
+    raw_text = format_day_file(db["days"][target], target)
+    day_path.write_text(raw_text)
+    db["days"][target]["raw_text"] = raw_text
 
     n = len(data["entries"])
     print(f"Saved {n} {'entry' if n == 1 else 'entries'} for {target}.")
 
-    sync()
+    sync(target, db["days"][target])
 
 
 GREEN = "\033[32m"
@@ -316,6 +336,42 @@ def status(day: str | None = None):
     print(f"  {BOLD}Remaining:{RESET}  {kcal_color}{kcal_left:>7.0f} kcal{RESET}   {protein_color}{protein_left:>5.1f}g protein{RESET}")
 
 
+def push():
+    """Push all local data to Supabase."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        print("Set PANTRI_SUPABASE_URL and PANTRI_SUPABASE_KEY env vars.")
+        sys.exit(1)
+    if not DB_FILE.exists():
+        print("No local data to push.")
+        sys.exit(0)
+
+    db = json.loads(DB_FILE.read_text())
+    headers = _supa_headers()
+
+    rows = []
+    for d, data in db["days"].items():
+        raw_text = data.get("raw_text", "")
+        if not raw_text:
+            df = day_file(d)
+            if df.exists():
+                raw_text = df.read_text()
+        rows.append({"date": d, "entries": data["entries"], "day_totals": data["day_totals"], "raw_text": raw_text})
+    if rows:
+        r = httpx.post(f"{SUPABASE_URL}/rest/v1/days", headers=headers, json=rows, timeout=30)
+        if r.status_code >= 400:
+            print(f"Failed to push days: {r.status_code} {r.text}")
+            sys.exit(1)
+
+    weight_rows = [{"date": d, "weight_kg": w} for d, w in db.get("weight", {}).items()]
+    if weight_rows:
+        r = httpx.post(f"{SUPABASE_URL}/rest/v1/weight", headers=headers, json=weight_rows, timeout=30)
+        if r.status_code >= 400:
+            print(f"Failed to push weight: {r.status_code} {r.text}")
+            sys.exit(1)
+
+    print(f"Pushed {len(rows)} days, {len(weight_rows)} weight entries.")
+
+
 USAGE = """\
 pantri — food tracker
 
@@ -324,6 +380,7 @@ usage:
   python main.py <file>          process a specific file
   python main.py status           show today's totals and remaining goals
   python main.py status 2026-03-10  show totals for a specific day
+  python main.py push             push all local data to Supabase
 
 file format:
   optionally put a date (YYYY-MM-DD) as the first line to
@@ -347,6 +404,10 @@ def main():
 
     if len(sys.argv) > 1 and sys.argv[1] == "status":
         status(sys.argv[2] if len(sys.argv) > 2 else None)
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "push":
+        push()
         return
 
     if len(sys.argv) > 1:
