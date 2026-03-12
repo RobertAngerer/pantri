@@ -29,17 +29,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Cache.init(applicationContext)
+        val startRoute = intent?.getStringExtra("navigate_to") ?: "dashboard"
         enableEdgeToEdge()
         setContent {
             PantriTheme {
-                PantriApp()
+                PantriApp(startRoute = startRoute)
             }
         }
     }
 }
 
 @Composable
-fun PantriApp() {
+fun PantriApp(startRoute: String = "dashboard") {
     val navController = rememberNavController()
     val currentRoute by navController.currentBackStackEntryAsState()
 
@@ -92,7 +93,7 @@ fun PantriApp() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "dashboard",
+            startDestination = startRoute,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("dashboard") { DashboardScreen() }

@@ -51,7 +51,7 @@ class HistoryViewModel : ViewModel() {
     fun loadDays() {
         viewModelScope.launch {
             try {
-                val data = ApiClient.api.getDays()
+                val data = ApiClient.getDays()
                 Cache.saveDays(data)
                 _days.value = data
             } catch (_: Exception) {
@@ -66,7 +66,7 @@ class HistoryViewModel : ViewModel() {
         val dateStr = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
         viewModelScope.launch {
             try {
-                val data = ApiClient.api.getDay(dateStr)
+                val data = ApiClient.getDay(dateStr)
                 Cache.saveDay(dateStr, data)
                 _currentDay.value = data
             } catch (_: Exception) {
@@ -185,6 +185,33 @@ fun HistoryScreen(vm: HistoryViewModel = viewModel()) {
         // Meal entries
         items(entries) { entry ->
             EntryCard(entry)
+        }
+
+        // Raw text file
+        val rawText = day?.raw_text ?: ""
+        if (rawText.isNotBlank()) {
+            item {
+                Text(
+                    "Day file",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Text(
+                        rawText.trimEnd(),
+                        modifier = Modifier.padding(14.dp),
+                        fontSize = 12.sp,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        lineHeight = 18.sp
+                    )
+                }
+            }
         }
     }
 }

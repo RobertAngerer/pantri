@@ -43,7 +43,7 @@ class DashboardViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 _offline.value = false
-                val data = ApiClient.api.getToday()
+                val data = ApiClient.getToday()
                 Cache.saveToday(data)
                 _state.value = data
             } catch (_: Exception) {
@@ -315,14 +315,18 @@ fun MacroCard(
 
 @Composable
 fun EntryCard(entry: Entry) {
+    val sorted = remember(entry.items) { entry.items.sortedByDescending { it.kcal } }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     entry.label,
@@ -333,41 +337,108 @@ fun EntryCard(entry: Entry) {
                     Text(entry.timestamp, fontSize = 12.sp, color = Color.Gray)
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            entry.items.forEach { item ->
+
+            Spacer(Modifier.height(10.dp))
+
+            // Column headers
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp)
+            ) {
+                Text("Item", fontSize = 11.sp, color = Color.Gray, modifier = Modifier.weight(1f))
+                Text("kcal", fontSize = 11.sp, color = Color.Gray, modifier = Modifier.width(48.dp), textAlign = TextAlign.End)
+                Text("P", fontSize = 11.sp, color = Color.Gray, modifier = Modifier.width(36.dp), textAlign = TextAlign.End)
+                Text("C", fontSize = 11.sp, color = Color.Gray, modifier = Modifier.width(36.dp), textAlign = TextAlign.End)
+                Text("F", fontSize = 11.sp, color = Color.Gray, modifier = Modifier.width(36.dp), textAlign = TextAlign.End)
+            }
+
+            HorizontalDivider(color = Color.Gray.copy(alpha = 0.15f))
+
+            // Items
+            sorted.forEach { item ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("${item.name} ${item.quantity}", fontSize = 13.sp)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(item.name, fontSize = 13.sp)
+                        Text(item.quantity, fontSize = 11.sp, color = Color.Gray)
+                    }
                     Text(
-                        "${item.kcal.toInt()} kcal  %.0fP".format(item.protein_g),
+                        "${item.kcal.toInt()}",
                         fontSize = 13.sp,
-                        color = Color.Gray
+                        modifier = Modifier.width(48.dp),
+                        textAlign = TextAlign.End
+                    )
+                    Text(
+                        "%.0f".format(item.protein_g),
+                        fontSize = 13.sp,
+                        color = ProteinBlue,
+                        modifier = Modifier.width(36.dp),
+                        textAlign = TextAlign.End
+                    )
+                    Text(
+                        "%.0f".format(item.carbs_g),
+                        fontSize = 13.sp,
+                        color = CarbsAmber,
+                        modifier = Modifier.width(36.dp),
+                        textAlign = TextAlign.End
+                    )
+                    Text(
+                        "%.0f".format(item.fat_g),
+                        fontSize = 13.sp,
+                        color = FatRed,
+                        modifier = Modifier.width(36.dp),
+                        textAlign = TextAlign.End
                     )
                 }
             }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+
+            // Totals
+            HorizontalDivider(modifier = Modifier.padding(top = 4.dp, bottom = 6.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "${entry.totals.kcal.toInt()} kcal",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
+                    "EUR %.2f".format(entry.totals.cost_eur),
+                    fontSize = 12.sp,
+                    color = CostCyan,
+                    modifier = Modifier.weight(1f)
                 )
                 Text(
-                    "%.1fP  %.1fC  %.1fF  EUR %.2f".format(
-                        entry.totals.protein_g,
-                        entry.totals.carbs_g,
-                        entry.totals.fat_g,
-                        entry.totals.cost_eur
-                    ),
-                    fontSize = 12.sp,
-                    color = Color.Gray
+                    "${entry.totals.kcal.toInt()}",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.width(48.dp),
+                    textAlign = TextAlign.End
+                )
+                Text(
+                    "%.0f".format(entry.totals.protein_g),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ProteinBlue,
+                    modifier = Modifier.width(36.dp),
+                    textAlign = TextAlign.End
+                )
+                Text(
+                    "%.0f".format(entry.totals.carbs_g),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = CarbsAmber,
+                    modifier = Modifier.width(36.dp),
+                    textAlign = TextAlign.End
+                )
+                Text(
+                    "%.0f".format(entry.totals.fat_g),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = FatRed,
+                    modifier = Modifier.width(36.dp),
+                    textAlign = TextAlign.End
                 )
             }
         }

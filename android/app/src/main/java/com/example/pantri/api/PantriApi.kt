@@ -1,11 +1,11 @@
 package com.example.pantri.api
 
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.POST
-import retrofit2.http.Path
+import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
+import java.time.LocalDate
 
 data class Totals(
     val kcal: Double = 0.0,
@@ -59,7 +59,8 @@ data class DaySummary(
 data class DayDetail(
     val date: String = "",
     val entries: List<Entry> = emptyList(),
-    val day_totals: Totals = Totals()
+    val day_totals: Totals = Totals(),
+    val raw_text: String = ""
 )
 
 data class WeightEntry(
@@ -72,32 +73,67 @@ data class WeightPostBody(
     val weight_kg: Double
 )
 
-interface PantriApi {
-    @GET("api/today")
-    suspend fun getToday(): TodayResponse
-
-    @GET("api/days")
-    suspend fun getDays(): List<DaySummary>
-
-    @GET("api/days/{day}")
-    suspend fun getDay(@Path("day") day: String): DayDetail
-
-    @GET("api/weight")
-    suspend fun getWeight(): List<WeightEntry>
-
-    @POST("api/weight")
-    suspend fun postWeight(@Body body: WeightPostBody): Map<String, Any>
-}
+private data class DayRow(
+    val date: String = "",
+    val entries: List<Entry> = emptyList(),
+    val day_totals: Totals = Totals(),
+    val raw_text: String = ""
+)
 
 object ApiClient {
-    // Use your machine's local IP for physical device, or 10.0.2.2 for emulator
-    private const val BASE_URL = "http://192.168.8.222:8000/"
+    private const val SUPABASE_URL = "https://lhvzpkaekbxkkbnebwqb.supabase.co"
+    private const val SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxodnpwa2Fla2J4a2tibmVid3FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMTg2MDIsImV4cCI6MjA4ODc5NDYwMn0.pMGnY80mfz4UAAT-m6OGF51LkgIERrUJ79xxKBT6yEE"
+    private const val GOAL_KCAL = 3500.0
+    private const val GOAL_PROTEIN = 200.0
 
-    val api: PantriApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(PantriApi::class.java)
+    private val gson = Gson()
+
+    private fun get(path: String): String {
+        val url = URL("$SUPABASE_URL/rest/v1/$path")
+        val conn = url.openConnection() as HttpURLConnection
+        conn.setRequestProperty("apikey", SUPABASE_KEY)
+        conn.setRequestProperty("Authorization", "Bearer $SUPABASE_KEY")
+        return conn.inputStream.bufferedReader().readText()
+    }
+
+    suspend fun getToday(): TodayResponse = withContext(Dispatchers.IO) {
+        val today = LocalDate.now().toString()
+        val body = get("days?date=eq.$today")
+        val rows = gson.fromJson(body, Array<DayRow>::class.java).toList()
+        val row = rows.firstOrNull()
+        val dt = row?.day_totals ?: Totals()
+        TodayResponse(
+            date = today,
+            entries = row?.entries ?: emptyList(),
+            day_totals = dt,
+            goals = Goals(kcal = GOAL_KCAL, protein_g = GOAL_PROTEIN),
+            remaining = Remaining(
+                kcal = GOAL_KCAL - dt.kcal,
+                protein_g = Math.round((GOAL_PROTEIN - dt.protein_g) * 10.0) / 10.0
+            )
+        )
+    }
+
+    suspend fun getDays(): List<DaySummary> = withContext(Dispatchers.IO) {
+        val body = get("days?select=date,day_totals,entries&order=date.desc")
+        val rows = gson.fromJson(body, Array<DayRow>::class.java).toList()
+        rows.map { DaySummary(date = it.date, day_totals = it.day_totals, entry_count = it.entries.size) }
+    }
+
+    suspend fun getDay(day: String): DayDetail = withContext(Dispatchers.IO) {
+        val body = get("days?date=eq.$day")
+        val rows = gson.fromJson(body, Array<DayRow>::class.java).toList()
+        val row = rows.firstOrNull()
+        DayDetail(
+            date = day,
+            entries = row?.entries ?: emptyList(),
+            day_totals = row?.day_totals ?: Totals(),
+            raw_text = row?.raw_text ?: ""
+        )
+    }
+
+    suspend fun getWeight(): List<WeightEntry> = withContext(Dispatchers.IO) {
+        val body = get("weight?order=date")
+        gson.fromJson(body, Array<WeightEntry>::class.java).toList()
     }
 }

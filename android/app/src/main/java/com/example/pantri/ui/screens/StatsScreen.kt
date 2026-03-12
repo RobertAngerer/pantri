@@ -30,7 +30,7 @@ class StatsViewModel : ViewModel() {
     fun load() {
         viewModelScope.launch {
             try {
-                val data = ApiClient.api.getDays()
+                val data = ApiClient.getDays()
                 Cache.saveDays(data)
                 _days.value = data
             } catch (_: Exception) {
