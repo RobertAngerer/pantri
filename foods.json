@@ -28,8 +28,8 @@
     "protein_g": 3.3,
     "carbs_g": 4.7,
     "fat_g": 3.5,
-    "cost_eur_per_100g": 0.13,
-    "cent_per_g_protein": 3.94
+    "cost_eur_per_100g": 0.2,
+    "cent_per_g_protein": 6.06
   },
   "apfel-zimt-cereal": {
     "kcal": 342,
@@ -174,5 +174,21 @@
     "fat_g": 1.5,
     "cost_eur_per_100g": 0.4,
     "cent_per_g_protein": 5.26
+  },
+  "honey-pops": {
+    "kcal": 392,
+    "protein_g": 8.0,
+    "carbs_g": 82.0,
+    "fat_g": 2.6,
+    "cost_eur_per_100g": 0.6,
+    "cent_per_g_protein": 7.5
+  },
+  "cini-minis": {
+    "kcal": 420,
+    "protein_g": 6.2,
+    "carbs_g": 75.0,
+    "fat_g": 9.4,
+    "cost_eur_per_100g": 0.47,
+    "cent_per_g_protein": 7.53
   }
 }
