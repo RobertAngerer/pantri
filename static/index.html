@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#121212">
+<title>Pantri</title>
+<link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+<link rel="apple-touch-icon" href="/static/icon.svg">
+<style>
+:root {
+  --bg: #121212;
+  --surface: #1E1E1E;
+  --surface2: #2A2A2A;
+  --text: #E0E0E0;
+  --text2: #9E9E9E;
+  --green: #4CAF50;
+  --blue: #2196F3;
+  --amber: #FFC107;
+  --red: #F44336;
+  --cyan: #00BCD4;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+  min-height: 100vh;
+}
+.ring-container {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+.ring-wrap {
+  position: relative;
+  width: 200px;
+  height: 200px;
+}
+.ring-wrap svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.ring-wrap circle {
+  fill: none;
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+.ring-bg { stroke: rgba(255,255,255,0.08); }
+.ring-fg {
+  stroke: var(--green);
+  transition: stroke-dashoffset 1s ease;
+}
+.ring-fg.over { stroke: var(--red); }
+.ring-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.ring-text .number {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+}
+.ring-text .label {
+  font-size: 14px;
+  color: var(--text2);
+  margin-top: 2px;
+}
+.ring-text .sub {
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 4px;
+}
+.macros {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.macro-card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+}
+.macro-card .macro-label { font-size: 12px; color: var(--text2); }
+.macro-card .macro-value { font-size: 20px; font-weight: 700; margin: 4px 0; }
+.macro-card .macro-bar {
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  margin: 6px 0 4px;
+  overflow: hidden;
+}
+.macro-card .macro-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s ease;
+}
+.macro-card .macro-left { font-size: 11px; color: var(--text2); }
+.cost-card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.cost-card .cost-label { font-size: 16px; font-weight: 500; }
+.cost-card .cost-value { font-size: 22px; font-weight: 700; color: var(--cyan); }
+.section-title {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 16px 0 8px;
+}
+.entry-card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.entry-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.entry-label { font-weight: 700; font-size: 14px; }
+.entry-time { font-size: 12px; color: var(--text2); }
+.entry-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 13px;
+}
+.entry-item .item-macros { color: var(--text2); }
+.entry-divider {
+  border: none;
+  border-top: 1px solid var(--surface2);
+  margin: 8px 0;
+}
+.entry-totals {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.entry-totals .total-kcal { font-weight: 700; }
+.entry-totals .total-macros { color: var(--text2); font-size: 12px; }
+.nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  padding: 10px 0 env(safe-area-inset-bottom, 10px);
+  border-top: 1px solid var(--surface2);
+}
+.nav a {
+  text-decoration: none;
+  color: var(--text2);
+  font-size: 12px;
+  text-align: center;
+  padding: 4px 16px;
+}
+.nav a.active { color: var(--green); }
+.nav a svg { display: block; margin: 0 auto 2px; width: 24px; height: 24px; }
+.history-card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+.history-card:active { background: var(--surface2); }
+.history-left .h-date { font-weight: 700; }
+.history-left .h-meals { font-size: 12px; color: var(--text2); }
+.history-right { text-align: right; }
+.history-right .h-kcal { font-weight: 700; color: var(--green); }
+.history-right .h-detail { font-size: 12px; color: var(--text2); }
+.page-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 8px 0;
+  margin-bottom: 8px;
+}
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+  color: var(--text2);
+}
+.error {
+  text-align: center;
+  padding: 80px 20px;
+}
+.error h2 { margin-bottom: 8px; }
+.error p { color: var(--text2); font-size: 14px; margin-bottom: 16px; }
+.error button {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.day-summary {
+  background: var(--green);
+  background: linear-gradient(135deg, #1B5E20, #2E7D32);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-evenly;
+  margin-bottom: 12px;
+}
+.day-summary .ds-col { text-align: center; }
+.day-summary .ds-val { font-size: 20px; font-weight: 700; }
+.day-summary .ds-label { font-size: 12px; opacity: 0.8; }
+body { padding-bottom: 80px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<nav class="nav">
+  <a href="#" id="nav-today" class="active" onclick="showToday(); return false;">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    Today
+  </a>
+  <a href="#" id="nav-history" onclick="showHistory(); return false;">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+    History
+  </a>
+</nav>
+
+<script>
+const SUPABASE_URL = 'https://lhvzpkaekbxkkbnebwqb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxodnpwa2Fla2J4a2tibmVid3FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMTg2MDIsImV4cCI6MjA4ODc5NDYwMn0.bNCHRLnSsYh0kxOmo-oFLvm-0Ib80eHJxSQVHgr1gOA';
+const GOAL_KCAL = 3500;
+const GOAL_PROTEIN = 200;
+
+const $ = id => document.getElementById(id);
+const app = $('app');
+
+function setNav(page) {
+  $('nav-today').className = page === 'today' ? 'active' : '';
+  $('nav-history').className = page === 'history' ? 'active' : '';
+}
+
+async function supa(table, query = '') {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  return r.json();
+}
+
+async function fetchToday() {
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = await supa('days', `date=eq.${today}`);
+  const day = rows[0];
+  const dt = day ? day.day_totals : { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0, cost_eur: 0 };
+  return {
+    date: today,
+    entries: day ? day.entries : [],
+    day_totals: dt,
+    goals: { kcal: GOAL_KCAL, protein_g: GOAL_PROTEIN },
+    remaining: { kcal: GOAL_KCAL - dt.kcal, protein_g: +(GOAL_PROTEIN - dt.protein_g).toFixed(1) },
+  };
+}
+
+function showToday() {
+  setNav('today');
+  app.innerHTML = '<div class="loading">Loading...</div>';
+  fetchToday().then(renderToday).catch(e => {
+    app.innerHTML = `<div class="error"><h2>Could not load data</h2><p>${e.message}</p><button onclick="showToday()">Retry</button></div>`;
+  });
+}
+
+function renderToday(d) {
+  const eaten = d.day_totals.kcal;
+  const goal = d.goals.kcal;
+  const remaining = goal - eaten;
+  const over = remaining < 0;
+  const pct = goal > 0 ? Math.min(eaten / goal, 1.5) : 0;
+  const r = 88;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - pct);
+
+  const proteinGoal = d.goals.protein_g;
+  const proteinPct = proteinGoal > 0 ? Math.min(d.day_totals.protein_g / proteinGoal, 1) * 100 : 0;
+
+  let entries = '';
+  d.entries.forEach(e => {
+    let items = e.items.map(i =>
+      `<div class="entry-item"><span>${i.name} ${i.quantity}</span><span class="item-macros">${Math.round(i.kcal)} kcal ${i.protein_g.toFixed(0)}P</span></div>`
+    ).join('');
+    entries += `
+      <div class="entry-card">
+        <div class="entry-header">
+          <span class="entry-label">${e.label}</span>
+          <span class="entry-time">${e.timestamp || ''}</span>
+        </div>
+        ${items}
+        <hr class="entry-divider">
+        <div class="entry-totals">
+          <span class="total-kcal">${Math.round(e.totals.kcal)} kcal</span>
+          <span class="total-macros">${e.totals.protein_g.toFixed(1)}P  ${e.totals.carbs_g.toFixed(1)}C  ${e.totals.fat_g.toFixed(1)}F  EUR ${e.totals.cost_eur.toFixed(2)}</span>
+        </div>
+      </div>`;
+  });
+
+  app.innerHTML = `
+    <div class="ring-container">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 200 200">
+          <circle class="ring-bg" cx="100" cy="100" r="${r}"/>
+          <circle class="ring-fg ${over ? 'over' : ''}" cx="100" cy="100" r="${r}"
+            stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+        </svg>
+        <div class="ring-text">
+          <div class="number" style="color:${over ? 'var(--red)' : 'var(--green)'}">
+            ${over ? '+' + (-remaining) : remaining}
+          </div>
+          <div class="label">${over ? 'kcal over' : 'kcal left'}</div>
+          <div class="sub">${Math.round(eaten)} / ${goal}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="macros">
+      <div class="macro-card">
+        <div class="macro-label">Protein</div>
+        <div class="macro-value" style="color:var(--blue)">${d.day_totals.protein_g.toFixed(0)}g</div>
+        <div class="macro-bar"><div class="macro-bar-fill" style="width:${proteinPct}%;background:var(--blue)"></div></div>
+        <div class="macro-left">${(proteinGoal - d.day_totals.protein_g).toFixed(0)} left</div>
+      </div>
+      <div class="macro-card">
+        <div class="macro-label">Carbs</div>
+        <div class="macro-value" style="color:var(--amber)">${d.day_totals.carbs_g.toFixed(0)}g</div>
+      </div>
+      <div class="macro-card">
+        <div class="macro-label">Fat</div>
+        <div class="macro-value" style="color:var(--red)">${d.day_totals.fat_g.toFixed(0)}g</div>
+      </div>
+    </div>
+
+    <div class="cost-card">
+      <span class="cost-label">Spent today</span>
+      <span class="cost-value">EUR ${d.day_totals.cost_eur.toFixed(2)}</span>
+    </div>
+
+    ${d.entries.length ? '<div class="section-title">Meals</div>' + entries : ''}
+  `;
+}
+
+async function fetchHistory() {
+  const rows = await supa('days', 'select=date,day_totals,entries&order=date.desc');
+  return rows.map(r => ({
+    date: r.date,
+    day_totals: r.day_totals,
+    entry_count: (r.entries || []).length,
+  }));
+}
+
+function showHistory() {
+  setNav('history');
+  app.innerHTML = '<div class="loading">Loading...</div>';
+  fetchHistory().then(renderHistory).catch(e => {
+    app.innerHTML = `<div class="error"><h2>Could not load history</h2><p>${e.message}</p><button onclick="showHistory()">Retry</button></div>`;
+  });
+}
+
+function renderHistory(days) {
+  if (!days.length) {
+    app.innerHTML = '<div class="page-title">History</div><p style="color:var(--text2)">No data yet.</p>';
+    return;
+  }
+  const cards = days.map(d => `
+    <div class="history-card" onclick="showDay('${d.date}')">
+      <div class="history-left">
+        <div class="h-date">${d.date}</div>
+        <div class="h-meals">${d.entry_count} meals</div>
+      </div>
+      <div class="history-right">
+        <div class="h-kcal">${Math.round(d.day_totals.kcal)} kcal</div>
+        <div class="h-detail">${d.day_totals.protein_g.toFixed(0)}P  EUR ${d.day_totals.cost_eur.toFixed(2)}</div>
+      </div>
+    </div>
+  `).join('');
+  app.innerHTML = `<div class="page-title">History</div>${cards}`;
+}
+
+async function fetchDay(date) {
+  const rows = await supa('days', `date=eq.${date}`);
+  const day = rows[0];
+  return {
+    date,
+    entries: day ? day.entries : [],
+    day_totals: day ? day.day_totals : { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0, cost_eur: 0 },
+  };
+}
+
+function showDay(date) {
+  app.innerHTML = '<div class="loading">Loading...</div>';
+  fetchDay(date).then(d => renderDay(d, date)).catch(e => {
+    app.innerHTML = `<div class="error"><h2>Error</h2><p>${e.message}</p><button onclick="showDay('${date}')">Retry</button></div>`;
+  });
+}
+
+function renderDay(d, date) {
+  let entries = '';
+  (d.entries || []).forEach(e => {
+    let items = e.items.map(i =>
+      `<div class="entry-item"><span>${i.name} ${i.quantity}</span><span class="item-macros">${Math.round(i.kcal)} kcal ${i.protein_g.toFixed(0)}P</span></div>`
+    ).join('');
+    entries += `
+      <div class="entry-card">
+        <div class="entry-header">
+          <span class="entry-label">${e.label}</span>
+          <span class="entry-time">${e.timestamp || ''}</span>
+        </div>
+        ${items}
+        <hr class="entry-divider">
+        <div class="entry-totals">
+          <span class="total-kcal">${Math.round(e.totals.kcal)} kcal</span>
+          <span class="total-macros">${e.totals.protein_g.toFixed(1)}P  ${e.totals.carbs_g.toFixed(1)}C  ${e.totals.fat_g.toFixed(1)}F  EUR ${e.totals.cost_eur.toFixed(2)}</span>
+        </div>
+      </div>`;
+  });
+
+  const dt = d.day_totals;
+  app.innerHTML = `
+    <button class="back-btn" onclick="showHistory()">< History</button>
+    <div class="page-title">${date}</div>
+    <div class="day-summary">
+      <div class="ds-col"><div class="ds-val">${Math.round(dt.kcal)}</div><div class="ds-label">kcal</div></div>
+      <div class="ds-col"><div class="ds-val" style="color:#90CAF9">${dt.protein_g.toFixed(0)}</div><div class="ds-label">protein</div></div>
+      <div class="ds-col"><div class="ds-val" style="color:#80DEEA">EUR ${dt.cost_eur.toFixed(2)}</div><div class="ds-label">spent</div></div>
+    </div>
+    ${entries}
+  `;
+}
+
+showToday();
+</script>
+</body>
+</html>

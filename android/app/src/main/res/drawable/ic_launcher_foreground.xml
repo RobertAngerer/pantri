@@ -1,34 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Fork: three tines + bridge + handle -->
+
+    <!-- Top bun - big golden dome -->
+    <path android:pathData="M26,62 L82,62 L82,50 Q82,20 54,20 Q26,20 26,50 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="54"
+                android:startY="20"
+                android:endX="54"
+                android:endY="62"
+                android:startColor="#F5C878"
+                android:endColor="#D4893A"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+
+    <!-- Bun highlight/shine -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="
-            M30,24 L30,46 Q30,48 32,48 L32,24 Q32,22 31,22 Q30,22 30,24 Z
-            M36,24 L36,46 Q36,48 38,48 L38,24 Q38,22 37,22 Q36,22 36,24 Z
-            M44,24 L44,46 Q44,48 46,48 L46,24 Q46,22 45,22 Q44,22 44,24 Z
-            M28,46 L48,46 L48,52 Q48,56 44,56 L42,56 L42,84 Q42,88 40,88 L36,88 Q34,88 34,84 L34,56 L32,56 Q28,56 28,52 Z" />
-    <!-- Euro coin circle -->
+        android:fillColor="#F8DCA0"
+        android:pathData="M40,32 Q40,27 54,25 Q68,27 68,32 Q68,36 54,38 Q40,36 40,32 Z" />
+
+    <!-- Sesame seeds -->
+    <path android:fillColor="#FFF8E7"
+        android:pathData="M42,42 a3.5,2.2 -25 1,1 7,0 a3.5,2.2 -25 1,1 -7,0 Z" />
+    <path android:fillColor="#FFF8E7"
+        android:pathData="M60,37 a3.5,2.2 20 1,1 7,0 a3.5,2.2 20 1,1 -7,0 Z" />
+    <path android:fillColor="#FFF8E7"
+        android:pathData="M50,49 a3.5,2.2 -5 1,1 7,0 a3.5,2.2 -5 1,1 -7,0 Z" />
+
+    <!-- Bun bottom edge shadow -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M68,58 m-22,0 a22,22 0 1,1 44,0 a22,22 0 1,1 -44,0" />
-    <!-- Euro sign (dark green on white coin) -->
+        android:fillColor="#C07830"
+        android:pathData="M26,60 L82,60 L82,62 L26,62 Z" />
+
+    <!-- Lettuce - thin wavy green -->
     <path
-        android:fillColor="#1B5E20"
-        android:strokeWidth="0"
-        android:pathData="
-            M75,44 C72,40 68,38 64,38
-            C58,38 53,44 53,58
-            C53,72 58,78 64,78
-            C68,78 72,76 75,72
-            L72,69 C70,72 68,74 64,74
-            C60,74 57,68 57,58
-            C57,48 60,42 64,42
-            C68,42 70,44 72,47 Z
-            M51,54 L72,54 L72,56 L51,56 Z
-            M51,60 L72,60 L72,62 L51,62 Z" />
+        android:fillColor="#66BB6A"
+        android:pathData="M24,62 Q29,59 34,62 Q39,65 44,62 Q49,59 54,62 Q59,65 64,62 Q69,59 74,62 Q79,65 84,62 L84,65 L24,65 Z" />
+
+    <!-- Sideways dollar sign -->
+    <group
+        android:pivotX="54"
+        android:pivotY="73"
+        android:rotation="90">
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#66BB6A"
+            android:strokeWidth="3.5"
+            android:strokeLineCap="round"
+            android:pathData="
+                M61,63.5 Q55.5,59 50.5,62 Q46,65.5 50.5,69
+                L57,71 Q62.5,73 62.5,77 Q62.5,81 57,82 Q52,82.5 47,79.5" />
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#66BB6A"
+            android:strokeWidth="2.5"
+            android:strokeLineCap="round"
+            android:pathData="M54,58 L54,88" />
+    </group>
+
+    <!-- Bottom bun - thin -->
+    <path android:pathData="M26,81 L82,81 L82,85 Q82,88 76,88 L32,88 Q26,88 26,85 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="54"
+                android:startY="81"
+                android:endX="54"
+                android:endY="88"
+                android:startColor="#D4893A"
+                android:endColor="#B8722E"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+
 </vector>

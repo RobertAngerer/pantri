@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F0E1A"/>
+      <stop offset="100%" style="stop-color:#1E1B2E"/>
+    </linearGradient>
+    <linearGradient id="bun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" style="stop-color:#F5C878"/>
+      <stop offset="100%" style="stop-color:#D4893A"/>
+    </linearGradient>
+    <linearGradient id="bbun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" style="stop-color:#D4893A"/>
+      <stop offset="100%" style="stop-color:#B8722E"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- Top bun dome -->
+  <path fill="url(#bun)" d="M120,300 L392,300 L392,240 Q392,90 256,90 Q120,90 120,240 Z"/>
+  <!-- Highlight -->
+  <ellipse cx="256" cy="150" rx="70" ry="30" fill="#F8DCA0"/>
+  <!-- Seeds -->
+  <ellipse cx="198" cy="210" rx="17" ry="11" transform="rotate(-25 198 210)" fill="#FFF8E7"/>
+  <ellipse cx="290" cy="190" rx="17" ry="11" transform="rotate(20 290 190)" fill="#FFF8E7"/>
+  <ellipse cx="242" cy="240" rx="17" ry="11" transform="rotate(-5 242 240)" fill="#FFF8E7"/>
+  <!-- Bun shadow -->
+  <rect x="120" y="292" width="272" height="8" fill="#C07830"/>
+
+  <!-- Lettuce -->
+  <path fill="#66BB6A" d="M108,300 Q128,280 148,300 Q168,320 188,300 Q208,280 228,300 Q248,320 268,300 Q288,280 308,300 Q328,320 348,300 Q368,280 388,300 Q408,320 416,300 L416,314 L108,314 Z"/>
+
+  <!-- Sideways dollar -->
+  <g transform="rotate(90 256 354)">
+    <path fill="none" stroke="#66BB6A" stroke-width="16" stroke-linecap="round"
+      d="M288,316 Q264,296 248,308 Q232,322 248,336
+         L264,342 Q282,350 282,366 Q282,382 264,386 Q246,390 228,378"/>
+    <line x1="256" y1="290" x2="256" y2="418" stroke="#66BB6A" stroke-width="12" stroke-linecap="round"/>
+  </g>
+
+  <!-- Bottom bun -->
+  <path fill="url(#bbun)" d="M120,396 L392,396 L392,414 Q392,430 368,430 L144,430 Q120,430 120,414 Z"/>
+</svg>

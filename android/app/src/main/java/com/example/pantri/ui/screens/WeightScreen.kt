@@ -8,6 +8,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -16,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import com.example.pantri.ui.theme.*
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -41,7 +44,7 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 
-val WeightPurple = Color(0xFF9C27B0)
+const val GOAL_WEIGHT_KG = 95.0
 
 class WeightViewModel : ViewModel() {
     private val _weights = MutableStateFlow<List<WeightEntry>>(emptyList())
@@ -183,6 +186,7 @@ fun WeightScreen(vm: WeightViewModel = viewModel()) {
     val context = LocalContext.current
 
     var weightInput by remember { mutableStateOf("") }
+    var showWeightDialog by remember { mutableStateOf(false) }
     val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
 
     val weekAnalyses = remember(weights, days) { analyzeWeeks(weights, days) }
@@ -232,109 +236,73 @@ fun WeightScreen(vm: WeightViewModel = viewModel()) {
         )
     }
 
+    if (showWeightDialog) {
+        AlertDialog(
+            onDismissRequest = { showWeightDialog = false; weightInput = "" },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val w = weightInput.replace(",", ".").toDoubleOrNull()
+                        if (w != null && w > 0) {
+                            vm.saveWeight(today, w)
+                            weightInput = ""
+                            showWeightDialog = false
+                        }
+                    },
+                    enabled = weightInput.replace(",", ".").toDoubleOrNull()?.let { it > 0 } == true
+                ) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWeightDialog = false; weightInput = "" }) { Text("Cancel") }
+            },
+            title = { Text("Log weight") },
+            text = {
+                OutlinedTextField(
+                    value = weightInput,
+                    onValueChange = { weightInput = it },
+                    label = { Text("Weight (kg)") },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(onDone = {
+                        focusManager.clearFocus()
+                        val w = weightInput.replace(",", ".").toDoubleOrNull()
+                        if (w != null && w > 0) {
+                            vm.saveWeight(today, w)
+                            weightInput = ""
+                            showWeightDialog = false
+                        }
+                    }),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        )
+    }
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showWeightDialog = true },
+                containerColor = WeightPurple,
+                contentColor = Color.White
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Log weight")
+            }
+        },
+        containerColor = Color.Transparent
+    ) { scaffoldPadding ->
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .padding(scaffoldPadding)
             .padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(top = 24.dp, bottom = 24.dp)
     ) {
         item {
             Text("Weight", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        }
-
-        // Reminder toggle
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text("Daily reminder", fontSize = 14.sp)
-                        if (reminderEnabled) {
-                            Text(
-                                "%d:%02d".format(reminderHour, reminderMinute),
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        }
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (reminderEnabled) {
-                            TextButton(onClick = { showTimePicker = true }) {
-                                Text("Change", fontSize = 12.sp)
-                            }
-                        }
-                        Switch(
-                            checked = reminderEnabled,
-                            onCheckedChange = { enabled ->
-                                if (enabled) {
-                                    showTimePicker = true
-                                } else {
-                                    WeightReminderScheduler.cancel(context)
-                                    reminderEnabled = false
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-        // Input
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedTextField(
-                        value = weightInput,
-                        onValueChange = { weightInput = it },
-                        label = { Text("Weight (kg)") },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Decimal,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(onDone = {
-                            focusManager.clearFocus()
-                            val w = weightInput.replace(",", ".").toDoubleOrNull()
-                            if (w != null && w > 0) {
-                                vm.saveWeight(today, w)
-                                weightInput = ""
-                            }
-                        }),
-                        singleLine = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Button(
-                        onClick = {
-                            focusManager.clearFocus()
-                            val w = weightInput.replace(",", ".").toDoubleOrNull()
-                            if (w != null && w > 0) {
-                                vm.saveWeight(today, w)
-                                weightInput = ""
-                            }
-                        },
-                        enabled = weightInput.replace(",", ".").toDoubleOrNull()?.let { it > 0 } == true
-                    ) {
-                        Text("Save")
-                    }
-                }
-            }
         }
 
         // Current weight card
@@ -372,6 +340,93 @@ fun WeightScreen(vm: WeightViewModel = viewModel()) {
                                     color = if (change < 0) CalGreen else if (change > 0) FatRed else Color.Gray
                                 )
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Goal weight projection
+        if (weights.size >= 2) {
+            item {
+                val latest = weights.last()
+                val remaining = latest.weight_kg - GOAL_WEIGHT_KG
+
+                // Calculate avg daily change from last 14+ days of data
+                val recentWeights = weights.takeLast(30)
+                val firstW = recentWeights.first()
+                val lastW = recentWeights.last()
+                val daysBetween = LocalDate.parse(firstW.date).until(LocalDate.parse(lastW.date), ChronoUnit.DAYS)
+                val avgDailyChange = if (daysBetween > 0) (lastW.weight_kg - firstW.weight_kg) / daysBetween else 0.0
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Surface2),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Goal", fontSize = 12.sp, color = Color.White.copy(alpha = 0.5f))
+                            Text("%.0f kg".format(GOAL_WEIGHT_KG), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = CalGreen)
+                        }
+                        Spacer(Modifier.height(8.dp))
+
+                        // Progress bar
+                        if (remaining > 0) {
+                            val startWeight = weights.first().weight_kg
+                            val totalToLose = startWeight - GOAL_WEIGHT_KG
+                            val lost = startWeight - latest.weight_kg
+                            val progressFraction = if (totalToLose > 0) (lost / totalToLose).toFloat().coerceIn(0f, 1f) else 0f
+
+                            LinearProgressIndicator(
+                                progress = { progressFraction },
+                                modifier = Modifier.fillMaxWidth().height(6.dp),
+                                color = CalGreen,
+                                trackColor = Color.White.copy(alpha = 0.06f),
+                                strokeCap = StrokeCap.Round,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text("%.1f kg to go".format(remaining), fontSize = 13.sp, color = Color.White.copy(alpha = 0.5f))
+                        } else {
+                            Text("Goal reached!", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = CalGreen)
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+                        HorizontalDivider(color = Color.White.copy(alpha = 0.06f))
+                        Spacer(Modifier.height(8.dp))
+
+                        if (avgDailyChange < 0 && remaining > 0) {
+                            val daysToGoal = (remaining / -avgDailyChange).toLong()
+                            val projectedDate = LocalDate.now().plusDays(daysToGoal)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text("Projected date", fontSize = 12.sp, color = Color.White.copy(alpha = 0.5f))
+                                    Text(
+                                        projectedDate.format(DateTimeFormatter.ofPattern("d MMM yyyy")),
+                                        fontSize = 18.sp, fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text("At current rate", fontSize = 12.sp, color = Color.White.copy(alpha = 0.5f))
+                                    Text(
+                                        "%+.0f g/day".format(avgDailyChange * 1000),
+                                        fontSize = 14.sp, color = CalGreen
+                                    )
+                                }
+                            }
+                        } else if (remaining > 0) {
+                            Text(
+                                if (avgDailyChange >= 0) "Currently gaining — no projection"
+                                else "Not enough data for projection",
+                                fontSize = 13.sp, color = Color.White.copy(alpha = 0.4f)
+                            )
                         }
                     }
                 }
@@ -443,6 +498,52 @@ fun WeightScreen(vm: WeightViewModel = viewModel()) {
                 }
             }
         }
+
+        // Daily reminder
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Daily reminder", fontSize = 14.sp)
+                        if (reminderEnabled) {
+                            Text(
+                                "%d:%02d".format(reminderHour, reminderMinute),
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (reminderEnabled) {
+                            TextButton(onClick = { showTimePicker = true }) {
+                                Text("Change", fontSize = 12.sp)
+                            }
+                        }
+                        Switch(
+                            checked = reminderEnabled,
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    showTimePicker = true
+                                } else {
+                                    WeightReminderScheduler.cancel(context)
+                                    reminderEnabled = false
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
     }
 }
 

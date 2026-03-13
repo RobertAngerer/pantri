@@ -1,6 +1,8 @@
 package com.example.pantri.api
 
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
@@ -73,6 +75,33 @@ data class WeightPostBody(
     val weight_kg: Double
 )
 
+data class FoodInfo(
+    val kcal: Int = 0,
+    val protein_g: Double = 0.0,
+    val carbs_g: Double = 0.0,
+    val fat_g: Double = 0.0,
+    val cost_eur_per_100g: Double = 0.0,
+    val cent_per_g_protein: Double? = null
+)
+
+data class OFFNutriments(
+    @SerializedName("energy-kcal_100g") val kcal100g: Double? = null,
+    val proteins_100g: Double? = null,
+    val carbohydrates_100g: Double? = null,
+    val fat_100g: Double? = null
+)
+
+data class OFFProduct(
+    val product_name: String? = null,
+    val quantity: String? = null,
+    val nutriments: OFFNutriments? = null
+)
+
+data class OFFResponse(
+    val status: Int = 0,
+    val product: OFFProduct? = null
+)
+
 private data class DayRow(
     val date: String = "",
     val entries: List<Entry> = emptyList(),
@@ -135,5 +164,44 @@ object ApiClient {
     suspend fun getWeight(): List<WeightEntry> = withContext(Dispatchers.IO) {
         val body = get("weight?order=date")
         gson.fromJson(body, Array<WeightEntry>::class.java).toList()
+    }
+
+    suspend fun loadFoods(): Map<String, FoodInfo> = withContext(Dispatchers.IO) {
+        val url = URL("$SUPABASE_URL/storage/v1/object/public/pantri/foods.json")
+        val conn = url.openConnection() as HttpURLConnection
+        if (conn.responseCode >= 400) {
+            val err = conn.errorStream?.bufferedReader()?.readText() ?: "HTTP ${conn.responseCode}"
+            throw Exception("Failed to load foods: $err")
+        }
+        val body = conn.inputStream.bufferedReader().readText()
+        val type = object : TypeToken<Map<String, FoodInfo>>() {}.type
+        gson.fromJson(body, type)
+    }
+
+    suspend fun saveFoods(foods: Map<String, FoodInfo>) = withContext(Dispatchers.IO) {
+        val url = URL("$SUPABASE_URL/storage/v1/object/pantri/foods.json")
+        val conn = url.openConnection() as HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("apikey", SUPABASE_KEY)
+        conn.setRequestProperty("Authorization", "Bearer $SUPABASE_KEY")
+        conn.setRequestProperty("Content-Type", "application/json")
+        conn.setRequestProperty("x-upsert", "true")
+        conn.doOutput = true
+        conn.outputStream.write(gson.toJson(foods).toByteArray())
+        if (conn.responseCode >= 400) {
+            val err = conn.errorStream?.bufferedReader()?.readText() ?: "HTTP ${conn.responseCode}"
+            throw Exception("Failed to save foods: $err")
+        }
+    }
+
+    suspend fun lookupBarcode(ean: String): OFFResponse? = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("https://world.openfoodfacts.org/api/v2/product/$ean.json")
+            val conn = url.openConnection() as HttpURLConnection
+            val body = conn.inputStream.bufferedReader().readText()
+            gson.fromJson(body, OFFResponse::class.java)
+        } catch (_: Exception) {
+            null
+        }
     }
 }

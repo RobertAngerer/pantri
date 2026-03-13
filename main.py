@@ -170,38 +170,70 @@ def call_llm(content: str) -> dict:
         sys.exit(1)
 
 
+G = "\033[32m"
+R = "\033[31m"
+C = "\033[36m"
+Y = "\033[33m"
+B = "\033[34m"
+BO = "\033[1m"
+DI = "\033[2m"
+RS = "\033[0m"
+BG_SURFACE = "\033[48;5;236m"
+BG_DARK = "\033[48;5;234m"
+
+
+def _macro_line(name, qty, kcal, p, c, f, cost, bold=False):
+    b = BO if bold else ""
+    r = RS if bold else ""
+    return (
+        f"  {b}{name:<24}{r} {DI}{qty:>7}{RS}"
+        f"  {b}{kcal:>6.0f}{r} {DI}kcal{RS}"
+        f"  {B}{b}{p:>5.1f}{r}P{RS}"
+        f"  {Y}{b}{c:>5.1f}{r}C{RS}"
+        f"  {R}{b}{f:>5.1f}{r}F{RS}"
+        f"  {C}{b}€{cost:.2f}{r}{RS}"
+    )
+
+
 def display(data: dict):
-    for entry in data["entries"]:
-        print(f"\n  === {entry['label']} ===")
+    print()
+    for i, entry in enumerate(data["entries"]):
+        ts = entry.get("timestamp", "")
+        ts_str = f" {DI}@ {ts}{RS}" if ts else ""
+        print(f"  {BO}{G}▌{RS} {BO}{entry['label'].upper()}{RS}{ts_str}")
+        print(f"  {DI}{'─' * 68}{RS}")
+
         for item in entry["items"]:
-            print(
-                f"  {item['name']:<25} {item['quantity']:>8}"
-                f"  {item['kcal']:>5} kcal"
-                f"  {item['protein_g']:>5.1f}P"
-                f"  {item['carbs_g']:>5.1f}C"
-                f"  {item['fat_g']:>5.1f}F"
-                f"  EUR {item['cost_eur']:.2f}"
-            )
+            print(_macro_line(
+                item["name"], item["quantity"],
+                item["kcal"], item["protein_g"], item["carbs_g"], item["fat_g"],
+                item["cost_eur"],
+            ))
+
         t = entry["totals"]
-        print("  " + "─" * 72)
-        print(
-            f"  {'TOTAL':<25} {'':>8}"
-            f"  {t['kcal']:>5} kcal"
-            f"  {t['protein_g']:>5.1f}P"
-            f"  {t['carbs_g']:>5.1f}C"
-            f"  {t['fat_g']:>5.1f}F"
-            f"  EUR {t['cost_eur']:.2f}"
-        )
+        print(f"  {DI}{'·' * 68}{RS}")
+        print(_macro_line("", "", t["kcal"], t["protein_g"], t["carbs_g"], t["fat_g"], t["cost_eur"], bold=True))
+        print()
 
     dt = data["day_totals"]
-    print("\n  " + "═" * 72)
+    kcal_left = GOAL_KCAL - dt["kcal"]
+    prot_left = GOAL_PROTEIN - dt["protein_g"]
+    kc = G if kcal_left >= 0 else R
+    pc = G if prot_left >= 0 else R
+
+    print(f"  {BO}{'━' * 68}{RS}")
     print(
-        f"  {'DAY TOTAL':<25} {'':>8}"
-        f"  {dt['kcal']:>5} kcal"
-        f"  {dt['protein_g']:>5.1f}P"
-        f"  {dt['carbs_g']:>5.1f}C"
-        f"  {dt['fat_g']:>5.1f}F"
-        f"  EUR {dt['cost_eur']:.2f}"
+        f"  {BO}DAY TOTAL{RS}               "
+        f"  {BO}{dt['kcal']:>6.0f}{RS} {DI}kcal{RS}"
+        f"  {B}{BO}{dt['protein_g']:>5.1f}{RS}P"
+        f"  {Y}{BO}{dt['carbs_g']:>5.1f}{RS}C"
+        f"  {R}{BO}{dt['fat_g']:>5.1f}{RS}F"
+        f"  {C}{BO}€{dt['cost_eur']:.2f}{RS}"
+    )
+    print(
+        f"  {DI}REMAINING{RS}               "
+        f"  {kc}{BO}{kcal_left:>6.0f}{RS} {DI}kcal{RS}"
+        f"  {pc}{BO}{prot_left:>5.1f}{RS}P"
     )
     print()
 
@@ -264,6 +296,16 @@ def save(data: dict, day_path: Path, target: str):
         if not entry.get("timestamp"):
             entry["timestamp"] = now
 
+    # deduplicate labels within incoming entries so merges don't collide
+    seen_labels = {}
+    for entry in data["entries"]:
+        label = entry["label"]
+        if label in seen_labels:
+            seen_labels[label] += 1
+            entry["label"] = f"{label} {seen_labels[label]}"
+        else:
+            seen_labels[label] = 1
+
     if DB_FILE.exists():
         db = json.loads(DB_FILE.read_text())
     else:
@@ -271,22 +313,15 @@ def save(data: dict, day_path: Path, target: str):
 
     if target in db["days"]:
         existing = db["days"][target]
-        # merge: update entries by label, add new ones
-        existing_by_label = {e["label"]: i for i, e in enumerate(existing["entries"])}
+        # preserve timestamps from previous entries where labels match
+        old_timestamps = {e["label"]: e.get("timestamp") for e in existing["entries"]}
         for entry in data["entries"]:
-            idx = existing_by_label.get(entry["label"])
-            if idx is not None:
-                # preserve the original timestamp from the existing entry
-                old_ts = existing["entries"][idx].get("timestamp")
-                if old_ts:
-                    entry["timestamp"] = old_ts
-                existing["entries"][idx] = entry
-            else:
-                existing["entries"].append(entry)
-        existing["day_totals"] = recalc_day_totals(existing["entries"])
-    else:
-        data["day_totals"] = recalc_day_totals(data["entries"])
-        db["days"][target] = data
+            old_ts = old_timestamps.get(entry["label"])
+            if old_ts and not entry.get("timestamp"):
+                entry["timestamp"] = old_ts
+
+    data["day_totals"] = recalc_day_totals(data["entries"])
+    db["days"][target] = data
 
     DB_FILE.write_text(json.dumps(db, indent=2, ensure_ascii=False))
 
@@ -301,16 +336,6 @@ def save(data: dict, day_path: Path, target: str):
     sync(target, db["days"][target])
 
 
-GREEN = "\033[32m"
-RED = "\033[31m"
-CYAN = "\033[36m"
-YELLOW = "\033[33m"
-BLUE = "\033[34m"
-BOLD = "\033[1m"
-DIM = "\033[2m"
-RESET = "\033[0m"
-
-
 def status(day: str | None = None):
     """Print consumed totals and what's remaining."""
     today = day or date.today().isoformat()
@@ -322,18 +347,45 @@ def status(day: str | None = None):
     db = json.loads(DB_FILE.read_text())
     if today not in db["days"]:
         print(f"No entries for {today}.")
-        print(f"  Remaining:  {GREEN}{GOAL_KCAL} kcal  {GOAL_PROTEIN:.0f}g protein{RESET}")
+        print(f"  Remaining:  {G}{GOAL_KCAL} kcal  {GOAL_PROTEIN:.0f}g protein{RS}")
         sys.exit(0)
 
     dt = db["days"][today]["day_totals"]
+    entries = db["days"][today].get("entries", [])
     kcal_left = GOAL_KCAL - dt["kcal"]
-    protein_left = GOAL_PROTEIN - dt["protein_g"]
-    kcal_color = RED if kcal_left < 0 else GREEN
-    protein_color = RED if protein_left < 0 else GREEN
+    prot_left = GOAL_PROTEIN - dt["protein_g"]
+    kc = G if kcal_left >= 0 else R
+    pc = G if prot_left >= 0 else R
 
-    print(f"  {DIM}{today}{RESET}")
-    print(f"  {BOLD}Eaten:{RESET}      {dt['kcal']:>7.0f} kcal   {BLUE}{dt['protein_g']:>5.1f}g protein{RESET}   {YELLOW}{dt['carbs_g']:>5.1f}g carbs{RESET}   {RED}{dt['fat_g']:>5.1f}g fat{RESET}   {CYAN}EUR {dt['cost_eur']:.2f}{RESET}")
-    print(f"  {BOLD}Remaining:{RESET}  {kcal_color}{kcal_left:>7.0f} kcal{RESET}   {protein_color}{protein_left:>5.1f}g protein{RESET}")
+    print()
+    print(f"  {DI}{today}{RS}  {DI}({len(entries)} meals){RS}")
+    print()
+    for entry in entries:
+        ts = entry.get("timestamp", "")
+        ts_str = f" {DI}@ {ts}{RS}" if ts else ""
+        t = entry["totals"]
+        print(
+            f"  {G}▌{RS} {BO}{entry['label']:<18}{RS}{ts_str}"
+            f"  {t['kcal']:>5.0f} kcal"
+            f"  {B}{t['protein_g']:>5.1f}P{RS}"
+            f"  {C}€{t['cost_eur']:.2f}{RS}"
+        )
+    print()
+    print(f"  {BO}{'━' * 56}{RS}")
+    print(
+        f"  {BO}EATEN{RS}       "
+        f"  {BO}{dt['kcal']:>6.0f}{RS} kcal"
+        f"  {B}{BO}{dt['protein_g']:>5.1f}{RS}P"
+        f"  {Y}{BO}{dt['carbs_g']:>5.1f}{RS}C"
+        f"  {R}{BO}{dt['fat_g']:>5.1f}{RS}F"
+        f"  {C}{BO}€{dt['cost_eur']:.2f}{RS}"
+    )
+    print(
+        f"  {DI}REMAINING{RS}   "
+        f"  {kc}{BO}{kcal_left:>6.0f}{RS} kcal"
+        f"  {pc}{BO}{prot_left:>5.1f}{RS}P"
+    )
+    print()
 
 
 def push():
@@ -372,6 +424,89 @@ def push():
     print(f"Pushed {len(rows)} days, {len(weight_rows)} weight entries.")
 
 
+def push_foods():
+    """Upload foods.json to Supabase Storage."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        print("Set PANTRI_SUPABASE_URL and PANTRI_SUPABASE_KEY env vars.")
+        sys.exit(1)
+    if not FOODS_FILE.exists():
+        print("No foods.json found.")
+        sys.exit(1)
+    r = httpx.post(
+        f"{SUPABASE_URL}/storage/v1/object/pantri/foods.json",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json",
+            "x-upsert": "true",
+        },
+        content=FOODS_FILE.read_bytes(),
+        timeout=10,
+    )
+    if r.status_code >= 400:
+        print(f"Failed: {r.status_code} {r.text}")
+    else:
+        print("Uploaded foods.json to Supabase Storage.")
+
+
+def pull_foods():
+    """Download foods.json from Supabase Storage."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        print("Set PANTRI_SUPABASE_URL and PANTRI_SUPABASE_KEY env vars.")
+        sys.exit(1)
+    r = httpx.get(
+        f"{SUPABASE_URL}/storage/v1/object/pantri/foods.json",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+        timeout=10,
+    )
+    if r.status_code >= 400:
+        print(f"Failed: {r.status_code} {r.text}")
+    else:
+        FOODS_FILE.write_text(r.text)
+        print("Downloaded foods.json from Supabase Storage.")
+
+
+def sync_foods():
+    """Pull foods.json from storage if it differs from local."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return
+    try:
+        r = httpx.get(
+            f"{SUPABASE_URL}/storage/v1/object/pantri/foods.json",
+            headers={
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+            },
+            timeout=5,
+        )
+        if r.status_code >= 400:
+            print(f"Foods sync failed: {r.status_code} {r.text}")
+            return
+        remote = r.text
+        local = FOODS_FILE.read_text() if FOODS_FILE.exists() else ""
+        if remote != local:
+            FOODS_FILE.write_text(remote)
+            local_count = len(json.loads(local)) if local.strip() else 0
+            remote_count = len(json.loads(remote))
+            print(f"Foods updated from storage ({local_count} → {remote_count} items).")
+    except Exception as e:
+        print(f"Foods sync failed: {e}")
+
+
+def new_day():
+    """Create today's day file with empty meal sections."""
+    today = date.today().isoformat()
+    path = day_file(today)
+    if path.exists():
+        print(f"{path} already exists.")
+        return
+    path.write_text(f"{today}\n[breakfast]\n")
+    print(f"Created {path}")
+
+
 USAGE = """\
 pantri — food tracker
 
@@ -381,6 +516,8 @@ usage:
   python main.py status           show today's totals and remaining goals
   python main.py status 2026-03-10  show totals for a specific day
   python main.py push             push all local data to Supabase
+  python main.py push-foods       upload foods.json to Supabase Storage
+  python main.py pull-foods       download foods.json from Supabase Storage
 
 file format:
   optionally put a date (YYYY-MM-DD) as the first line to
@@ -409,6 +546,20 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == "push":
         push()
         return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "push-foods":
+        push_foods()
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "pull-foods":
+        pull_foods()
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "new":
+        new_day()
+        return
+
+    sync_foods()
 
     if len(sys.argv) > 1:
         path = Path(sys.argv[1])

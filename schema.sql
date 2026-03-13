@@ -19,3 +19,10 @@ alter table weight enable row level security;
 
 create policy "public read" on days for select to anon using (true);
 create policy "public read" on weight for select to anon using (true);
+
+-- Storage bucket for foods.json sync
+insert into storage.buckets (id, name, public) values ('pantri', 'pantri', true);
+
+create policy "public read" on storage.objects for select to anon using (bucket_id = 'pantri');
+create policy "anon upload" on storage.objects for insert to anon with check (bucket_id = 'pantri');
+create policy "anon update" on storage.objects for update to anon using (bucket_id = 'pantri');

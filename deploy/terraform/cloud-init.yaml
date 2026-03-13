@@ -1,0 +1,56 @@
+#cloud-config
+package_update: true
+packages:
+  - debian-keyring
+  - debian-archive-keyring
+  - apt-transport-https
+  - curl
+
+runcmd:
+  # Install uv
+  - su - ubuntu -c "curl -LsSf https://astral.sh/uv/install.sh | sh"
+
+  # Install caddy
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+  - apt-get update
+  - apt-get install -y caddy
+
+  # Create pantri dir
+  - mkdir -p /home/ubuntu/pantri
+  - chown ubuntu:ubuntu /home/ubuntu/pantri
+
+  # Caddy config — plain HTTP for now (change to domain later for HTTPS)
+  - |
+    cat > /etc/caddy/Caddyfile << 'EOF'
+    :80 {
+        reverse_proxy 127.0.0.1:8000
+    }
+    EOF
+  - systemctl restart caddy
+
+  # Pantri systemd service
+  - |
+    cat > /etc/systemd/system/pantri.service << 'EOF'
+    [Unit]
+    Description=Pantri API
+    After=network.target
+
+    [Service]
+    User=ubuntu
+    WorkingDirectory=/home/ubuntu/pantri
+    ExecStart=/home/ubuntu/.local/bin/uv run uvicorn api:app --host 127.0.0.1 --port 8000
+    Restart=always
+    RestartSec=5
+    Environment=PATH=/home/ubuntu/.local/bin:/usr/bin
+
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+  - systemctl daemon-reload
+  - systemctl enable pantri
+
+  # Open iptables (Oracle Ubuntu images block ports by default)
+  - iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
+  - iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+  - netfilter-persistent save

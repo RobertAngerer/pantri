@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.example.pantri.ui.theme.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -150,25 +151,36 @@ fun HistoryScreen(vm: HistoryViewModel = viewModel()) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                colors = CardDefaults.cardColors(containerColor = Surface2),
+                shape = MaterialTheme.shapes.large
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("${dt.kcal.toInt()}", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                        Text("kcal", fontSize = 12.sp)
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("${dt.kcal.toInt()}", fontWeight = FontWeight.Bold, fontSize = 28.sp, color = CalGreen)
+                        Text("€%.2f".format(dt.cost_eur), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CostCyan)
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("%.0f".format(dt.protein_g), fontWeight = FontWeight.Bold, fontSize = 20.sp, color = ProteinBlue)
-                        Text("protein", fontSize = 12.sp)
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("EUR %.2f".format(dt.cost_eur), fontWeight = FontWeight.Bold, fontSize = 20.sp, color = CostCyan)
-                        Text("spent", fontSize = 12.sp)
+                    Text("kcal", fontSize = 12.sp, color = Color.White.copy(alpha = 0.5f))
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("%.0f".format(dt.protein_g), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = ProteinBlue)
+                            Text("protein", fontSize = 11.sp, color = Color.White.copy(alpha = 0.45f))
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("%.0f".format(dt.carbs_g), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = CarbsAmber)
+                            Text("carbs", fontSize = 11.sp, color = Color.White.copy(alpha = 0.45f))
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("%.0f".format(dt.fat_g), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = FatRed)
+                            Text("fat", fontSize = 11.sp, color = Color.White.copy(alpha = 0.45f))
+                        }
                     }
                 }
             }
