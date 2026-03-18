@@ -10,19 +10,34 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-DB_FILE = Path("pantri_data.json")
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
+DB_FILE = PROJECT_DIR / "pantri_data.json"
 
 GOAL_KCAL = 3500
 GOAL_PROTEIN = 200.0
+GOAL_FAT = 100.0
+BUDGET_MONTHLY = 600.0
+
+# Try to load settings from Supabase
+SETTINGS_FILE = PROJECT_DIR / "settings.json"
+try:
+    if SETTINGS_FILE.exists():
+        _s = json.loads(SETTINGS_FILE.read_text())
+        GOAL_KCAL = _s.get("goal_kcal", GOAL_KCAL)
+        GOAL_PROTEIN = _s.get("goal_protein_g", GOAL_PROTEIN)
+        GOAL_FAT = _s.get("goal_fat_g", GOAL_FAT)
+        BUDGET_MONTHLY = _s.get("budget_monthly", BUDGET_MONTHLY)
+except Exception:
+    pass
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=str(PROJECT_DIR / "static")), name="static")
 
 
 @app.get("/")
 def index():
-    return FileResponse("static/index.html")
+    return FileResponse(str(PROJECT_DIR / "static/index.html"))
 
 
 def load_db() -> dict:

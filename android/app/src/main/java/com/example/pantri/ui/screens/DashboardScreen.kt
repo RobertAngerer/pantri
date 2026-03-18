@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pantri.api.ApiClient
 import com.example.pantri.api.Cache
 import com.example.pantri.api.Entry
+import com.example.pantri.api.MealPrepItem
 import com.example.pantri.api.TodayResponse
 import com.example.pantri.ui.theme.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,33 +45,68 @@ class DashboardViewModel : ViewModel() {
     private val _offline = MutableStateFlow(false)
     val offline = _offline.asStateFlow()
 
+    private val _mealPreps = MutableStateFlow<List<MealPrepItem>>(emptyList())
+    val mealPreps = _mealPreps.asStateFlow()
+
+    private val _refreshing = MutableStateFlow(false)
+    val refreshing = _refreshing.asStateFlow()
+
     init { load() }
 
-    fun load() {
-        viewModelScope.launch {
-            try {
-                _offline.value = false
-                val data = ApiClient.getToday()
-                Cache.saveToday(data)
-                _state.value = data
-            } catch (_: Exception) {
-                val cached = Cache.loadToday()
-                if (cached != null) {
-                    _state.value = cached
-                    _offline.value = true
-                } else {
-                    _state.value = null
-                    _offline.value = true
-                }
+    private suspend fun doLoad() {
+        // Load settings first so goals are correct
+        try {
+            val s = ApiClient.loadSettings()
+            Cache.saveSettings(s)
+        } catch (_: Exception) {
+            // Use cached settings
+            ApiClient.applySettings(Cache.loadSettings())
+        }
+
+        try {
+            _offline.value = false
+            val data = ApiClient.getToday()
+            Cache.saveToday(data)
+            _state.value = data
+        } catch (_: Exception) {
+            val cached = Cache.loadToday()
+            if (cached != null) {
+                _state.value = cached
+                _offline.value = true
+            } else {
+                _state.value = null
+                _offline.value = true
             }
+        }
+        try {
+            val preps = ApiClient.getMealPreps()
+            Cache.saveMealPreps(preps)
+            _mealPreps.value = preps
+        } catch (_: Exception) {
+            _mealPreps.value = Cache.loadMealPreps()
+        }
+    }
+
+    fun load() {
+        viewModelScope.launch { doLoad() }
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            _refreshing.value = true
+            doLoad()
+            _refreshing.value = false
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(vm: DashboardViewModel = viewModel()) {
     val data by vm.state.collectAsState()
     val offline by vm.offline.collectAsState()
+    val mealPreps by vm.mealPreps.collectAsState()
+    val refreshing by vm.refreshing.collectAsState()
 
     val today = data ?: return Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         if (offline) {
@@ -81,10 +118,15 @@ fun DashboardScreen(vm: DashboardViewModel = viewModel()) {
                 Button(onClick = { vm.load() }) { Text("Retry") }
             }
         } else {
-            CircularProgressIndicator()
+            SpinningAppIcon()
         }
     }
 
+    PullToRefreshBox(
+        isRefreshing = refreshing,
+        onRefresh = { vm.refresh() },
+        modifier = Modifier.fillMaxSize()
+    ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -144,6 +186,19 @@ fun DashboardScreen(vm: DashboardViewModel = viewModel()) {
             }
             items(today.entries) { entry -> EntryCard(entry) }
         }
+
+        if (mealPreps.isNotEmpty()) {
+            item {
+                Text(
+                    "Fridge",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            items(mealPreps) { prep -> MealPrepCard(prep) }
+        }
+    }
     }
 }
 
@@ -199,8 +254,8 @@ fun MacroRow(today: TodayResponse) {
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         MacroCard("Protein", today.day_totals.protein_g, today.goals.protein_g, "g", ProteinBlue, Modifier.weight(1f))
-        MacroCard("Carbs", today.day_totals.carbs_g, null, "g", CarbsAmber, Modifier.weight(1f))
-        MacroCard("Fat", today.day_totals.fat_g, null, "g", FatRed, Modifier.weight(1f))
+        MacroCard("Carbs", today.day_totals.carbs_g, today.goals.carbs_g, "g", CarbsAmber, Modifier.weight(1f))
+        MacroCard("Fat", today.day_totals.fat_g, today.goals.fat_g, "g", FatRed, Modifier.weight(1f))
     }
 }
 
@@ -331,6 +386,68 @@ fun EntryCard(entry: Entry) {
                         Text("%.0f".format(entry.totals.fat_g), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FatRed, modifier = Modifier.width(32.dp), textAlign = TextAlign.End)
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun MealPrepCard(prep: MealPrepItem) {
+    val pct = if (prep.initial_g > 0) (prep.remaining_g / prep.initial_g).toFloat().coerceIn(0f, 1f) else 0f
+    val color = when {
+        pct > 0.3f -> CalGreen
+        pct > 0.1f -> CarbsAmber
+        else -> FatRed
+    }
+    val animatedProgress by animateFloatAsState(
+        targetValue = pct, animationSpec = tween(800), label = "prep_${prep.id}"
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Surface2),
+        shape = MaterialTheme.shapes.large
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    prep.food,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    prep.created,
+                    fontSize = 11.sp,
+                    color = Color.White.copy(alpha = 0.3f)
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { animatedProgress },
+                modifier = Modifier.fillMaxWidth().height(8.dp),
+                color = color,
+                trackColor = Color.White.copy(alpha = 0.06f),
+                strokeCap = StrokeCap.Round,
+            )
+            Spacer(Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "%.0fg remaining".format(prep.remaining_g),
+                    fontSize = 12.sp,
+                    color = color
+                )
+                Text(
+                    "%.0fg / %.0fg".format(prep.remaining_g, prep.initial_g),
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.35f)
+                )
             }
         }
     }

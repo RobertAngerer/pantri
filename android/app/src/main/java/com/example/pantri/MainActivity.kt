@@ -11,7 +11,8 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -21,8 +22,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.pantri.api.Cache
 import com.example.pantri.ui.screens.DashboardScreen
+import com.example.pantri.ui.screens.FoodsScreen
 import com.example.pantri.ui.screens.HistoryScreen
-import com.example.pantri.ui.screens.ScanScreen
+import com.example.pantri.ui.screens.SettingsScreen
 import com.example.pantri.ui.screens.StatsScreen
 import com.example.pantri.ui.screens.WeightScreen
 import com.example.pantri.ui.theme.*
@@ -54,9 +56,10 @@ fun PantriApp(startRoute: String = "dashboard") {
                 val items = listOf(
                     NavItem("dashboard", "Today", Icons.Default.Home, Mint),
                     NavItem("history", "History", Icons.Default.DateRange, Peach),
-                    NavItem("scan", "Scan", Icons.Default.Search, CostCyan),
                     NavItem("weight", "Weight", Icons.Default.Favorite, WeightPurple),
+                    NavItem("foods", "Foods", Icons.AutoMirrored.Filled.List, CalGreen),
                     NavItem("stats", "Stats", Icons.Default.Info, SkyBlue),
+                    NavItem("settings", "Settings", Icons.Default.Settings, Lilac),
                 )
                 items.forEach { item ->
                     val selected = currentRoute?.destination?.route == item.route
@@ -82,9 +85,10 @@ fun PantriApp(startRoute: String = "dashboard") {
         ) {
             composable("dashboard") { DashboardScreen() }
             composable("history") { HistoryScreen() }
-            composable("scan") { ScanScreen() }
             composable("weight") { WeightScreen() }
+            composable("foods") { FoodsScreen() }
             composable("stats") { StatsScreen() }
+            composable("settings") { SettingsScreen() }
         }
     }
 }

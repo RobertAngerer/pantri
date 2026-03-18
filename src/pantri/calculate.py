@@ -23,7 +23,8 @@ def cent_per_g_protein(info: dict) -> float | None:
 
 
 def main():
-    path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("foods.json")
+    project_dir = Path(__file__).resolve().parent.parent.parent
+    path = Path(sys.argv[1]) if len(sys.argv) > 1 else project_dir / "foods.json"
     if not path.exists():
         print(f"File not found: {path}")
         sys.exit(1)

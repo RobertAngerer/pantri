@@ -14,10 +14,10 @@ val SkyBlue = Color(0xFF82B1FF)
 val Peach = Color(0xFFFFCC80)
 val Lilac = Color(0xFFB39DDB)
 
-// Semantic macro colors — each one distinct
-val CalGreen = Color(0xFF66DE93)
-val ProteinBlue = Color(0xFF82B1FF)
-val CarbsAmber = Color(0xFFFFB74D)
-val FatRed = Color(0xFFEF9A9A)
-val CostCyan = Color(0xFF4DD0E1)
-val WeightPurple = Color(0xFFB39DDB)
+// Semantic macro colors — Dracula palette from neovim config
+val CalGreen = Color(0xFF50FA7B)   // Dracula green
+val ProteinBlue = Color(0xFF50FA7B) // protein green (matches neovim P highlight)
+val CarbsAmber = Color(0xFFF1FA8C) // Dracula yellow
+val FatRed = Color(0xFFFF5555)     // Dracula red
+val CostCyan = Color(0xFF8BE9FD)   // Dracula cyan
+val WeightPurple = Color(0xFFBD93F9) // Dracula purple

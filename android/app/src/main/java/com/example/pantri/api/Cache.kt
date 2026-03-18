@@ -54,4 +54,24 @@ object Cache {
             gson.fromJson(json, object : TypeToken<List<WeightEntry>>() {}.type)
         } catch (_: Exception) { emptyList() }
     }
+
+    fun saveMealPreps(items: List<MealPrepItem>) {
+        prefs.edit().putString("mealpreps", gson.toJson(items)).apply()
+    }
+
+    fun loadMealPreps(): List<MealPrepItem> {
+        val json = prefs.getString("mealpreps", null) ?: return emptyList()
+        return try {
+            gson.fromJson(json, object : TypeToken<List<MealPrepItem>>() {}.type)
+        } catch (_: Exception) { emptyList() }
+    }
+
+    fun saveSettings(settings: AppSettings) {
+        prefs.edit().putString("settings", gson.toJson(settings)).apply()
+    }
+
+    fun loadSettings(): AppSettings {
+        val json = prefs.getString("settings", null) ?: return AppSettings()
+        return try { gson.fromJson(json, AppSettings::class.java) } catch (_: Exception) { AppSettings() }
+    }
 }

@@ -111,7 +111,7 @@ fun ScanScreen() {
         if (loading) {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
+                    SpinningAppIcon()
                     Spacer(Modifier.height(8.dp))
                     Text("Looking up product...", color = Color.Gray)
                 }

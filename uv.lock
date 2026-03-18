@@ -188,9 +188,10 @@ wheels = [
 [[package]]
 name = "pantri"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "openai" },
     { name = "uvicorn" },
 ]
@@ -198,6 +199,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.135.1" },
+    { name = "httpx", specifier = ">=0.28.0" },
     { name = "openai", specifier = ">=1.0.0" },
     { name = "uvicorn", specifier = ">=0.41.0" },
 ]
