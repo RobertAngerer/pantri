@@ -2,11 +2,14 @@ import { createClient, type Session } from '@supabase/supabase-js';
 import { browser } from '$app/environment';
 import { env } from '$env/dynamic/public';
 
+// Shared "rawbangerer" Supabase project — same one used by the Android app,
+// the Python CLI (via RAWBANGERER_SUPABASE_URL / _KEY), and other apps like
+// taily. Publishable keys are safe to ship to clients; RLS is the boundary.
 const SUPABASE_URL =
-  env.PUBLIC_SUPABASE_URL || 'https://lhvzpkaekbxkkbnebwqb.supabase.co';
+  env.PUBLIC_SUPABASE_URL || 'https://qeksokwmqqvwmybitvxm.supabase.co';
 const SUPABASE_ANON_KEY =
   env.PUBLIC_SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxodnpwa2Fla2J4a2tibmVid3FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMTg2MDIsImV4cCI6MjA4ODc5NDYwMn0.bNCHRLnSsYh0kxOmo-oFLvm-0Ib80eHJxSQVHgr1gOA';
+  'sb_publishable_UeHtG_1E1ZrolSS6ld0lzQ_iFccAmtc';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
