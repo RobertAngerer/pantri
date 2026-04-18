@@ -1,0 +1,115 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-bg: #0b0f14;
+  --color-surface: #121821;
+  --color-surface-2: #1a2230;
+  --color-border: #253044;
+  --color-muted: #8a94a6;
+
+  --color-brand: #22c55e;
+  --color-brand-dim: #166534;
+  --color-blue: #60a5fa;
+  --color-amber: #fbbf24;
+  --color-rose: #fb7185;
+  --color-cyan: #22d3ee;
+  --color-violet: #a78bfa;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter,
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: radial-gradient(
+      1200px 800px at 80% -10%,
+      rgba(34, 197, 94, 0.08),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 700px at -10% 110%,
+      rgba(96, 165, 250, 0.08),
+      transparent 60%
+    ),
+    var(--color-bg);
+  min-height: 100vh;
+}
+
+.card {
+  background: color-mix(in oklab, var(--color-surface) 92%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  backdrop-filter: blur(8px);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 0.6rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 120ms ease, border-color 120ms ease;
+  cursor: pointer;
+}
+.btn:hover {
+  background: color-mix(in oklab, var(--color-surface-2) 70%, var(--color-border));
+}
+.btn-primary {
+  background: var(--color-brand);
+  border-color: var(--color-brand);
+  color: #05160c;
+}
+.btn-primary:hover {
+  background: color-mix(in oklab, var(--color-brand) 85%, white);
+}
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-muted);
+}
+.btn-ghost:hover {
+  background: var(--color-surface-2);
+  color: #fff;
+}
+
+.input {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  color: inherit;
+  font-size: 0.95rem;
+  outline: none;
+}
+.input:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-brand) 25%, transparent);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+}
+.chip.active {
+  background: color-mix(in oklab, var(--color-brand) 20%, transparent);
+  color: var(--color-brand);
+  border-color: color-mix(in oklab, var(--color-brand) 40%, transparent);
+}
